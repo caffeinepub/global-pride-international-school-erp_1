@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --radius: 0.625rem;
+
+    /* Green-dominant School ERP palette (OKLCH L C H) */
+    --background: 0.98 0.005 150;
+    --foreground: 0.15 0.02 155;
+
+    --card: 1 0 0;
+    --card-foreground: 0.15 0.02 155;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.15 0.02 155;
+
+    /* Primary: Rich forest green */
+    --primary: 0.48 0.15 155;
+    --primary-foreground: 0.98 0.005 150;
+
+    /* Secondary: Light sage green */
+    --secondary: 0.94 0.03 150;
+    --secondary-foreground: 0.3 0.08 155;
+
+    --muted: 0.96 0.01 150;
+    --muted-foreground: 0.5 0.04 155;
+
+    /* Accent: Bright emerald */
+    --accent: 0.92 0.06 155;
+    --accent-foreground: 0.25 0.1 155;
+
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    --border: 0.9 0.02 150;
+    --input: 0.9 0.02 150;
+    --ring: 0.55 0.14 155;
+
+    --chart-1: 0.52 0.16 155;
+    --chart-2: 0.6 0.12 160;
+    --chart-3: 0.4 0.1 145;
+    --chart-4: 0.75 0.15 140;
+    --chart-5: 0.65 0.18 150;
+
+    /* Sidebar: Deep forest green */
+    --sidebar: 0.28 0.09 155;
+    --sidebar-foreground: 0.95 0.01 150;
+    --sidebar-primary: 0.75 0.14 155;
+    --sidebar-primary-foreground: 0.95 0.01 150;
+    --sidebar-accent: 0.35 0.1 155;
+    --sidebar-accent-foreground: 0.95 0.01 150;
+    --sidebar-border: 0.38 0.08 155;
+    --sidebar-ring: 0.65 0.14 155;
+
+    /* Custom school tokens */
+    --school-green-50: oklch(0.97 0.025 155);
+    --school-green-100: oklch(0.93 0.05 155);
+    --school-green-200: oklch(0.87 0.08 155);
+    --school-green-500: oklch(0.62 0.17 155);
+    --school-green-600: oklch(0.52 0.17 155);
+    --school-green-700: oklch(0.42 0.14 155);
+    --school-green-800: oklch(0.32 0.1 155);
+    --school-green-900: oklch(0.22 0.07 155);
+  }
+
+  .dark {
+    --background: 0.12 0.02 155;
+    --foreground: 0.95 0.01 150;
+    --card: 0.18 0.03 155;
+    --card-foreground: 0.95 0.01 150;
+    --popover: 0.22 0.03 155;
+    --popover-foreground: 0.95 0.01 150;
+    --primary: 0.65 0.16 155;
+    --primary-foreground: 0.12 0.02 155;
+    --secondary: 0.25 0.05 155;
+    --secondary-foreground: 0.9 0.01 150;
+    --muted: 0.22 0.03 155;
+    --muted-foreground: 0.65 0.05 150;
+    --accent: 0.3 0.07 155;
+    --accent-foreground: 0.9 0.01 150;
+    --destructive: 0.704 0.191 22.216;
+    --destructive-foreground: 0.985 0 0;
+    --border: 1 0 0 / 10%;
+    --input: 1 0 0 / 15%;
+    --ring: 0.55 0.14 155;
+    --sidebar: 0.12 0.03 155;
+    --sidebar-foreground: 0.95 0.01 150;
+    --sidebar-primary: 0.65 0.16 155;
+    --sidebar-primary-foreground: 0.12 0.02 155;
+    --sidebar-accent: 0.22 0.04 155;
+    --sidebar-accent-foreground: 0.9 0.01 150;
+    --sidebar-border: 1 0 0 / 10%;
+    --sidebar-ring: 0.55 0.14 155;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: oklch(0.75 0.05 155); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: oklch(0.55 0.12 155); }
+
+/* Print styles */
+@media print {
+  .no-print,
+  .sidebar-nav,
+  .top-header-bar,
+  button:not(.print-btn) {
+    display: none !important;
+  }
+
+  .print-area {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-receipt,
+  .print-report-card {
+    padding: 20px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    border: 1px solid #333;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  th {
+    background-color: #e8f5e9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Smooth transitions */
+.page-transition {
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Toast animations */
+@keyframes slideInRight {
+  from { transform: translateX(110%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(110%); opacity: 0; }
+}
+
+.toast-enter { animation: slideInRight 0.3s ease-out; }
+.toast-exit { animation: slideOutRight 0.3s ease-in; }
