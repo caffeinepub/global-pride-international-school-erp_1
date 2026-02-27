@@ -52,6 +52,12 @@ export interface Student {
   'studentClass' : string,
   'finalFee' : number,
 }
+export interface StudentExtras {
+  'studentId' : bigint,
+  'dateOfBirth' : string,
+  'aadharNo' : string,
+  'admissionNo' : string,
+}
 export type Time = bigint;
 export interface TransportMonthlyPayment {
   'id' : bigint,
@@ -101,9 +107,11 @@ export interface _SERVICE {
   >,
   'deleteStudent' : ActorMethod<[bigint], undefined>,
   'deleteTransportStudent' : ActorMethod<[bigint], undefined>,
+  'getAllStudentExtras' : ActorMethod<[], Array<StudentExtras>>,
   'getAllStudents' : ActorMethod<[], Array<Student>>,
   'getReportCard' : ActorMethod<[bigint], [] | [ReportCard]>,
   'getStudentById' : ActorMethod<[bigint], [] | [Student]>,
+  'getStudentExtras' : ActorMethod<[bigint], [] | [StudentExtras]>,
   'getUnpaidTransportStudents' : ActorMethod<
     [bigint, bigint],
     Array<TransportStudent>
@@ -117,6 +125,7 @@ export interface _SERVICE {
     [bigint, Array<string>, Array<string>, Array<Array<number>>],
     undefined
   >,
+  'setStudentExtras' : ActorMethod<[bigint, string, string, string], undefined>,
   'updateStudent' : ActorMethod<
     [
       bigint,

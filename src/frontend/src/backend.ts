@@ -89,6 +89,12 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface StudentExtras {
+    studentId: bigint;
+    dateOfBirth: string;
+    aadharNo: string;
+    admissionNo: string;
+}
 export interface TransportMonthlyPayment {
     id: bigint;
     month: bigint;
@@ -166,17 +172,20 @@ export interface backendInterface {
     addTransportStudent(name: string, fatherName: string, contactNumber: string, transportOption: TransportOption, monthlyFee: number): Promise<bigint>;
     deleteStudent(id: bigint): Promise<void>;
     deleteTransportStudent(id: bigint): Promise<void>;
+    getAllStudentExtras(): Promise<Array<StudentExtras>>;
     getAllStudents(): Promise<Array<Student>>;
     getReportCard(studentId: bigint): Promise<ReportCard | null>;
     getStudentById(id: bigint): Promise<Student | null>;
+    getStudentExtras(studentId: bigint): Promise<StudentExtras | null>;
     getUnpaidTransportStudents(month: bigint, year: bigint): Promise<Array<TransportStudent>>;
     markTransportFeePaid(studentId: bigint, month: bigint, year: bigint): Promise<void>;
     saveAttendance(date: Time, classSection: string, records: Array<[bigint, string, AttendanceStatus]>): Promise<void>;
     saveOrUpdateReportCard(studentId: bigint, subjects: Array<string>, columns: Array<string>, marksEntries: Array<Array<number>>): Promise<void>;
+    setStudentExtras(studentId: bigint, dateOfBirth: string, aadharNo: string, admissionNo: string): Promise<void>;
     updateStudent(id: bigint, name: string, studentClass: string, section: string, fatherName: string, motherName: string, contactNumber: string, totalFee: number, feePaymentCategory: FeeCategory, discountAmount: number, finalFee: number, examFeesSA1: number, examFeesSA2: number): Promise<void>;
     updateTransportStudent(id: bigint, name: string, fatherName: string, contactNumber: string, transportOption: TransportOption, monthlyFee: number): Promise<void>;
 }
-import type { AttendanceStatus as _AttendanceStatus, FeeCategory as _FeeCategory, Payment as _Payment, PaymentMode as _PaymentMode, ReportCard as _ReportCard, Student as _Student, Time as _Time, TransportMonthlyPayment as _TransportMonthlyPayment, TransportOption as _TransportOption, TransportStudent as _TransportStudent } from "./declarations/backend.did.d.ts";
+import type { AttendanceStatus as _AttendanceStatus, FeeCategory as _FeeCategory, Payment as _Payment, PaymentMode as _PaymentMode, ReportCard as _ReportCard, Student as _Student, StudentExtras as _StudentExtras, Time as _Time, TransportMonthlyPayment as _TransportMonthlyPayment, TransportOption as _TransportOption, TransportStudent as _TransportStudent } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async addFeePayment(arg0: bigint, arg1: number, arg2: Time, arg3: PaymentMode, arg4: FeeCategory): Promise<bigint> {
@@ -249,6 +258,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAllStudentExtras(): Promise<Array<StudentExtras>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllStudentExtras();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllStudentExtras();
+            return result;
+        }
+    }
     async getAllStudents(): Promise<Array<Student>> {
         if (this.processError) {
             try {
@@ -291,18 +314,32 @@ export class Backend implements backendInterface {
             return from_candid_opt_n18(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getStudentExtras(arg0: bigint): Promise<StudentExtras | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getStudentExtras(arg0);
+                return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getStudentExtras(arg0);
+            return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getUnpaidTransportStudents(arg0: bigint, arg1: bigint): Promise<Array<TransportStudent>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUnpaidTransportStudents(arg0, arg1);
-                return from_candid_vec_n19(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n20(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUnpaidTransportStudents(arg0, arg1);
-            return from_candid_vec_n19(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n20(this._uploadFile, this._downloadFile, result);
         }
     }
     async markTransportFeePaid(arg0: bigint, arg1: bigint, arg2: bigint): Promise<void> {
@@ -322,14 +359,14 @@ export class Backend implements backendInterface {
     async saveAttendance(arg0: Time, arg1: string, arg2: Array<[bigint, string, AttendanceStatus]>): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveAttendance(arg0, arg1, to_candid_vec_n24(this._uploadFile, this._downloadFile, arg2));
+                const result = await this.actor.saveAttendance(arg0, arg1, to_candid_vec_n25(this._uploadFile, this._downloadFile, arg2));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveAttendance(arg0, arg1, to_candid_vec_n24(this._uploadFile, this._downloadFile, arg2));
+            const result = await this.actor.saveAttendance(arg0, arg1, to_candid_vec_n25(this._uploadFile, this._downloadFile, arg2));
             return result;
         }
     }
@@ -344,6 +381,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.saveOrUpdateReportCard(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async setStudentExtras(arg0: bigint, arg1: string, arg2: string, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setStudentExtras(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setStudentExtras(arg0, arg1, arg2, arg3);
             return result;
         }
     }
@@ -388,17 +439,20 @@ function from_candid_Payment_n11(_uploadFile: (file: ExternalBlob) => Promise<Ui
 function from_candid_Student_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Student): Student {
     return from_candid_record_n9(_uploadFile, _downloadFile, value);
 }
-function from_candid_TransportOption_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TransportOption): TransportOption {
-    return from_candid_variant_n23(_uploadFile, _downloadFile, value);
+function from_candid_TransportOption_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TransportOption): TransportOption {
+    return from_candid_variant_n24(_uploadFile, _downloadFile, value);
 }
-function from_candid_TransportStudent_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TransportStudent): TransportStudent {
-    return from_candid_record_n21(_uploadFile, _downloadFile, value);
+function from_candid_TransportStudent_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TransportStudent): TransportStudent {
+    return from_candid_record_n22(_uploadFile, _downloadFile, value);
 }
 function from_candid_opt_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ReportCard]): ReportCard | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Student]): Student | null {
     return value.length === 0 ? null : from_candid_Student_n8(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_StudentExtras]): StudentExtras | null {
+    return value.length === 0 ? null : value[0];
 }
 function from_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
@@ -424,7 +478,7 @@ function from_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uin
         feeCategory: from_candid_FeeCategory_n15(_uploadFile, _downloadFile, value.feeCategory)
     };
 }
-function from_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
     transportOption: _TransportOption;
     name: string;
@@ -445,7 +499,7 @@ function from_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uin
 } {
     return {
         id: value.id,
-        transportOption: from_candid_TransportOption_n22(_uploadFile, _downloadFile, value.transportOption),
+        transportOption: from_candid_TransportOption_n23(_uploadFile, _downloadFile, value.transportOption),
         name: value.name,
         isActive: value.isActive,
         fatherName: value.fatherName,
@@ -529,7 +583,7 @@ function from_candid_variant_n16(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): FeeCategory {
     return "OTP" in value ? FeeCategory.OTP : "Monthly" in value ? FeeCategory.Monthly : "Term1" in value ? FeeCategory.Term1 : "Term2" in value ? FeeCategory.Term2 : "Term3" in value ? FeeCategory.Term3 : "HalfYearly" in value ? FeeCategory.HalfYearly : value;
 }
-function from_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     OnlyPickUp: null;
 } | {
     OnlyDrop: null;
@@ -541,14 +595,14 @@ function from_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Ui
 function from_candid_vec_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Payment>): Array<Payment> {
     return value.map((x)=>from_candid_Payment_n11(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_TransportStudent>): Array<TransportStudent> {
-    return value.map((x)=>from_candid_TransportStudent_n20(_uploadFile, _downloadFile, x));
+function from_candid_vec_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_TransportStudent>): Array<TransportStudent> {
+    return value.map((x)=>from_candid_TransportStudent_n21(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Student>): Array<Student> {
     return value.map((x)=>from_candid_Student_n8(_uploadFile, _downloadFile, x));
 }
-function to_candid_AttendanceStatus_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AttendanceStatus): _AttendanceStatus {
-    return to_candid_variant_n27(_uploadFile, _downloadFile, value);
+function to_candid_AttendanceStatus_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AttendanceStatus): _AttendanceStatus {
+    return to_candid_variant_n28(_uploadFile, _downloadFile, value);
 }
 function to_candid_FeeCategory_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: FeeCategory): _FeeCategory {
     return to_candid_variant_n4(_uploadFile, _downloadFile, value);
@@ -559,11 +613,11 @@ function to_candid_PaymentMode_n1(_uploadFile: (file: ExternalBlob) => Promise<U
 function to_candid_TransportOption_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: TransportOption): _TransportOption {
     return to_candid_variant_n6(_uploadFile, _downloadFile, value);
 }
-function to_candid_tuple_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [bigint, string, AttendanceStatus]): [bigint, string, _AttendanceStatus] {
+function to_candid_tuple_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [bigint, string, AttendanceStatus]): [bigint, string, _AttendanceStatus] {
     return [
         value[0],
         value[1],
-        to_candid_AttendanceStatus_n26(_uploadFile, _downloadFile, value[2])
+        to_candid_AttendanceStatus_n27(_uploadFile, _downloadFile, value[2])
     ];
 }
 function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PaymentMode): {
@@ -581,7 +635,7 @@ function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         BankTransfer: null
     } : value;
 }
-function to_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AttendanceStatus): {
+function to_candid_variant_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AttendanceStatus): {
     Present: null;
 } | {
     Absent: null;
@@ -634,8 +688,8 @@ function to_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         PickUpDrop: null
     } : value;
 }
-function to_candid_vec_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[bigint, string, AttendanceStatus]>): Array<[bigint, string, _AttendanceStatus]> {
-    return value.map((x)=>to_candid_tuple_n25(_uploadFile, _downloadFile, x));
+function to_candid_vec_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[bigint, string, AttendanceStatus]>): Array<[bigint, string, _AttendanceStatus]> {
+    return value.map((x)=>to_candid_tuple_n26(_uploadFile, _downloadFile, x));
 }
 export interface CreateActorOptions {
     agent?: Agent;

@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, X, Loader2 } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
 import { FeeCategory } from "../backend";
-import type { Student } from "../backend";
+import type { Student, StudentExtras } from "../backend";
 import {
   CLASSES,
   SECTIONS,
@@ -22,9 +22,12 @@ const EMPTY_FORM = {
   contactNumber: "",
   totalFee: DEFAULT_FEES["Nursery"],
   feePaymentCategory: FeeCategory.OTP,
-  discountAmount: 0,
+  discountPercent: 0,
   examSA1: false,
   examSA2: false,
+  dateOfBirth: "",
+  aadharNo: "",
+  admissionNo: "",
 };
 
 type FormState = typeof EMPTY_FORM;
@@ -32,6 +35,7 @@ type FormState = typeof EMPTY_FORM;
 export default function StudentsPage() {
   const { backend, isFetching: actorFetching } = useBackend();
   const [students, setStudents] = useState<Student[]>([]);
+  const [extrasMap, setExtrasMap] = useState<Map<string, StudentExtras>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<bigint | null>(null);
@@ -45,8 +49,16 @@ export default function StudentsPage() {
   const loadStudents = useCallback(async () => {
     if (!backend) return;
     try {
-      const data = await backend.getAllStudents();
+      const [data, extras] = await Promise.all([
+        backend.getAllStudents(),
+        backend.getAllStudentExtras(),
+      ]);
       setStudents(data);
+      const map = new Map<string, StudentExtras>();
+      for (const e of extras) {
+        map.set(e.studentId.toString(), e);
+      }
+      setExtrasMap(map);
     } catch {
       toast.error("Failed to load students");
     } finally {
@@ -58,13 +70,19 @@ export default function StudentsPage() {
     if (!actorFetching) loadStudents();
   }, [loadStudents, actorFetching]);
 
-  const finalFee = useMemo(
-    () => Math.max(0, form.totalFee - form.discountAmount),
-    [form.totalFee, form.discountAmount],
+  const discountAmount = useMemo(
+    () => Math.round((form.totalFee * Math.min(100, Math.max(0, form.discountPercent))) / 100),
+    [form.totalFee, form.discountPercent],
   );
 
   const examFeesSA1 = form.examSA1 ? 500 : 0;
   const examFeesSA2 = form.examSA2 ? 500 : 0;
+
+  const finalFee = useMemo(
+    () => Math.max(0, form.totalFee - discountAmount + examFeesSA1 + examFeesSA2),
+    [form.totalFee, discountAmount, examFeesSA1, examFeesSA2],
+  );
+
   const installmentAmount = getInstallmentAmount(finalFee, form.feePaymentCategory);
 
   const handleClassChange = (cls: string) => {
@@ -91,14 +109,15 @@ export default function StudentsPage() {
           form.contactNumber,
           form.totalFee,
           form.feePaymentCategory,
-          form.discountAmount,
+          discountAmount,
           finalFee,
           examFeesSA1,
           examFeesSA2,
         );
+        await backend.setStudentExtras(editingId, form.dateOfBirth, form.aadharNo, form.admissionNo);
         toast.success("Student updated successfully!");
       } else {
-        await backend.addStudent(
+        const newId = await backend.addStudent(
           form.name,
           form.studentClass,
           form.section,
@@ -107,11 +126,12 @@ export default function StudentsPage() {
           form.contactNumber,
           form.totalFee,
           form.feePaymentCategory,
-          form.discountAmount,
+          discountAmount,
           finalFee,
           examFeesSA1,
           examFeesSA2,
         );
+        await backend.setStudentExtras(newId, form.dateOfBirth, form.aadharNo, form.admissionNo);
         toast.success("Student added successfully!");
       }
       setForm(EMPTY_FORM);
@@ -127,6 +147,10 @@ export default function StudentsPage() {
 
   const handleEdit = (student: Student) => {
     setEditingId(student.id);
+    const pct = student.totalFee > 0
+      ? Math.round((student.discountAmount / student.totalFee) * 100)
+      : 0;
+    const extras = extrasMap.get(student.id.toString());
     setForm({
       name: student.name,
       studentClass: student.studentClass,
@@ -136,9 +160,12 @@ export default function StudentsPage() {
       contactNumber: student.contactNumber,
       totalFee: student.totalFee,
       feePaymentCategory: student.feePaymentCategory,
-      discountAmount: student.discountAmount,
+      discountPercent: pct,
       examSA1: student.examFeesSA1 > 0,
       examSA2: student.examFeesSA2 > 0,
+      dateOfBirth: extras?.dateOfBirth ?? "",
+      aadharNo: extras?.aadharNo ?? "",
+      admissionNo: extras?.admissionNo ?? "",
     });
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -313,6 +340,51 @@ export default function StudentsPage() {
                 />
               </div>
 
+              {/* Date of Birth */}
+              <div>
+                <label htmlFor="date-of-birth" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+                  Date of Birth
+                </label>
+                <input
+                  id="date-of-birth"
+                  type="date"
+                  value={form.dateOfBirth}
+                  onChange={(e) => setForm((p) => ({ ...p, dateOfBirth: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              {/* Aadhar Card No */}
+              <div>
+                <label htmlFor="aadhar-no" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+                  Aadhar Card No
+                </label>
+                <input
+                  id="aadhar-no"
+                  type="text"
+                  value={form.aadharNo}
+                  onChange={(e) => setForm((p) => ({ ...p, aadharNo: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="12-digit Aadhar number"
+                  maxLength={14}
+                />
+              </div>
+
+              {/* Admission No */}
+              <div>
+                <label htmlFor="admission-no" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+                  Admission No
+                </label>
+                <input
+                  id="admission-no"
+                  type="text"
+                  value={form.admissionNo}
+                  onChange={(e) => setForm((p) => ({ ...p, admissionNo: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Admission number"
+                />
+              </div>
+
               {/* Total Fee */}
               <div>
                 <label htmlFor="total-fee" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
@@ -348,15 +420,17 @@ export default function StudentsPage() {
               {/* Discount */}
               <div>
                 <label htmlFor="discount" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
-                  Discount (₹)
+                  Discount (%)
                 </label>
                 <input
                   id="discount"
                   type="number"
-                  value={form.discountAmount}
-                  onChange={(e) => setForm((p) => ({ ...p, discountAmount: Number(e.target.value) }))}
+                  value={form.discountPercent}
+                  onChange={(e) => setForm((p) => ({ ...p, discountPercent: Number(e.target.value) }))}
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                   min={0}
+                  max={100}
+                  placeholder="0–100"
                 />
               </div>
             </div>
@@ -366,6 +440,14 @@ export default function StudentsPage() {
               <div className="rounded-lg p-3 bg-secondary border border-border text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Final Fee</p>
                 <p className="text-lg font-bold text-primary mt-0.5">{formatCurrency(finalFee)}</p>
+                {discountAmount > 0 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">Discount: -{formatCurrency(discountAmount)}</p>
+                )}
+                {(examFeesSA1 > 0 || examFeesSA2 > 0) && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Exam: +{formatCurrency(examFeesSA1 + examFeesSA2)}
+                  </p>
+                )}
               </div>
               <div className="rounded-lg p-3 bg-secondary border border-border text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">{feeCategoryInstallmentLabel(form.feePaymentCategory)}</p>
@@ -486,6 +568,7 @@ export default function StudentsPage() {
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sec</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden md:table-cell">Father</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden lg:table-cell">Contact</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden lg:table-cell">Adm. No</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Final Fee</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden lg:table-cell">Category</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
@@ -503,6 +586,9 @@ export default function StudentsPage() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{student.fatherName}</td>
                       <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{student.contactNumber}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
+                        {extrasMap.get(student.id.toString())?.admissionNo || <span className="text-muted-foreground/40">—</span>}
+                      </td>
                       <td className="px-4 py-3 font-semibold text-foreground">{formatCurrency(student.finalFee)}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs">

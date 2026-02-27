@@ -1,14 +1,12 @@
 import Array "mo:core/Array";
-import Order "mo:core/Order";
 import Map "mo:core/Map";
 import List "mo:core/List";
-import Text "mo:core/Text";
-import Time "mo:core/Time";
 import Nat "mo:core/Nat";
-import Int "mo:core/Int";
-import Iter "mo:core/Iter";
-import Float "mo:core/Float";
+import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
+import Time "mo:core/Time";
+
+
 
 actor {
   // Types
@@ -72,6 +70,13 @@ actor {
     payments : [Payment];
   };
 
+  type StudentExtras = {
+    studentId : Nat;
+    dateOfBirth : Text;
+    aadharNo : Text;
+    admissionNo : Text;
+  };
+
   type TransportStudent = {
     id : Nat;
     name : Text;
@@ -126,6 +131,12 @@ actor {
     };
   };
 
+  module StudentExtras {
+    public func compare(a : StudentExtras, b : StudentExtras) : Order.Order {
+      Nat.compare(a.studentId, b.studentId);
+    };
+  };
+
   // State
   var nextStudentId = 1;
   var nextAttendanceId = 1;
@@ -136,6 +147,7 @@ actor {
   let students = Map.empty<Nat, Student>();
   let transportStudents = Map.empty<Nat, TransportStudent>();
   let attendanceRecords = List.empty<AttendanceRecord>();
+  let studentExtras = Map.empty<Nat, StudentExtras>();
 
   // Student Functions
   public shared ({ caller }) func addStudent(
@@ -223,7 +235,7 @@ actor {
   };
 
   public query ({ caller }) func getAllStudents() : async [Student] {
-    students.values().toArray().sort();
+    students.values().toArray().sort(func(a : Student, b : Student) : Order.Order { Nat.compare(a.id, b.id) });
   };
 
   // Attendance Functions
@@ -419,6 +431,25 @@ actor {
   };
 
   public query ({ caller }) func getUnpaidTransportStudents(month : Nat, year : Nat) : async [TransportStudent] {
-    transportStudents.values().toArray().sort();
+    transportStudents.values().toArray().sort(func(a : TransportStudent, b : TransportStudent) : Order.Order { Nat.compare(a.id, b.id) });
+  };
+
+  // Student Extras Functions
+  public shared ({ caller }) func setStudentExtras(studentId : Nat, dateOfBirth : Text, aadharNo : Text, admissionNo : Text) : async () {
+    let extras : StudentExtras = {
+      studentId;
+      dateOfBirth;
+      aadharNo;
+      admissionNo;
+    };
+    studentExtras.add(studentId, extras);
+  };
+
+  public query ({ caller }) func getStudentExtras(studentId : Nat) : async ?StudentExtras {
+    studentExtras.get(studentId);
+  };
+
+  public query ({ caller }) func getAllStudentExtras() : async [StudentExtras] {
+    studentExtras.values().toArray().sort(func(a : StudentExtras, b : StudentExtras) : Order.Order { Nat.compare(a.studentId, b.studentId) });
   };
 };

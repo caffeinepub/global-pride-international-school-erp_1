@@ -7,6 +7,12 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface StudentExtras {
+    studentId: bigint;
+    dateOfBirth: string;
+    aadharNo: string;
+    admissionNo: string;
+}
 export interface TransportMonthlyPayment {
     id: bigint;
     month: bigint;
@@ -84,13 +90,16 @@ export interface backendInterface {
     addTransportStudent(name: string, fatherName: string, contactNumber: string, transportOption: TransportOption, monthlyFee: number): Promise<bigint>;
     deleteStudent(id: bigint): Promise<void>;
     deleteTransportStudent(id: bigint): Promise<void>;
+    getAllStudentExtras(): Promise<Array<StudentExtras>>;
     getAllStudents(): Promise<Array<Student>>;
     getReportCard(studentId: bigint): Promise<ReportCard | null>;
     getStudentById(id: bigint): Promise<Student | null>;
+    getStudentExtras(studentId: bigint): Promise<StudentExtras | null>;
     getUnpaidTransportStudents(month: bigint, year: bigint): Promise<Array<TransportStudent>>;
     markTransportFeePaid(studentId: bigint, month: bigint, year: bigint): Promise<void>;
     saveAttendance(date: Time, classSection: string, records: Array<[bigint, string, AttendanceStatus]>): Promise<void>;
     saveOrUpdateReportCard(studentId: bigint, subjects: Array<string>, columns: Array<string>, marksEntries: Array<Array<number>>): Promise<void>;
+    setStudentExtras(studentId: bigint, dateOfBirth: string, aadharNo: string, admissionNo: string): Promise<void>;
     updateStudent(id: bigint, name: string, studentClass: string, section: string, fatherName: string, motherName: string, contactNumber: string, totalFee: number, feePaymentCategory: FeeCategory, discountAmount: number, finalFee: number, examFeesSA1: number, examFeesSA2: number): Promise<void>;
     updateTransportStudent(id: bigint, name: string, fatherName: string, contactNumber: string, transportOption: TransportOption, monthlyFee: number): Promise<void>;
 }

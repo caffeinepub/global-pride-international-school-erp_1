@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Loader2, Printer, TrendingUp } from "lucide-react";
+import { Loader2, Printer, TrendingUp, Banknote, Smartphone, Building2 } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
 import type { Student, Payment } from "../backend";
 import { formatCurrency, formatDate } from "../utils/constants";
@@ -65,6 +65,9 @@ export default function FeeReportPage() {
   }, [backend, selectedDate]);
 
   const dailyTotal = reportRows.reduce((s, r) => s + r.amountPaid, 0);
+  const cashTotal = reportRows.filter((r) => r.paymentMode === "Cash").reduce((s, r) => s + r.amountPaid, 0);
+  const upiTotal = reportRows.filter((r) => r.paymentMode === "UPI").reduce((s, r) => s + r.amountPaid, 0);
+  const bankTransferTotal = reportRows.filter((r) => r.paymentMode === "BankTransfer").reduce((s, r) => s + r.amountPaid, 0);
 
   return (
     <div className="space-y-6">
@@ -104,21 +107,56 @@ export default function FeeReportPage() {
       {generated && (
         <>
           {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 xl:col-span-2">
               <p className="text-xs text-emerald-700 uppercase font-semibold tracking-wide">
                 Daily Total — {new Date(selectedDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
               </p>
               <p className="text-3xl font-extrabold text-emerald-700 mt-2">{formatCurrency(dailyTotal)}</p>
               <p className="text-xs text-emerald-600 mt-1">{reportRows.length} transaction(s)</p>
             </div>
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-                <p className="text-xs text-blue-700 uppercase font-semibold tracking-wide">Grand Total (All Time)</p>
+            {/* Cash */}
+            <div className="rounded-xl border border-green-200 bg-green-50 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Banknote className="h-4 w-4 text-green-700" />
+                <p className="text-xs text-green-700 uppercase font-semibold tracking-wide">Cash</p>
               </div>
-              <p className="text-3xl font-extrabold text-blue-700 mt-2">{formatCurrency(grandTotal)}</p>
+              <p className="text-2xl font-extrabold text-green-700">{formatCurrency(cashTotal)}</p>
+              <p className="text-xs text-green-600 mt-1">
+                {reportRows.filter((r) => r.paymentMode === "Cash").length} txn(s)
+              </p>
             </div>
+            {/* UPI */}
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Smartphone className="h-4 w-4 text-blue-700" />
+                <p className="text-xs text-blue-700 uppercase font-semibold tracking-wide">UPI</p>
+              </div>
+              <p className="text-2xl font-extrabold text-blue-700">{formatCurrency(upiTotal)}</p>
+              <p className="text-xs text-blue-600 mt-1">
+                {reportRows.filter((r) => r.paymentMode === "UPI").length} txn(s)
+              </p>
+            </div>
+            {/* Bank Transfer */}
+            <div className="rounded-xl border border-purple-200 bg-purple-50 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Building2 className="h-4 w-4 text-purple-700" />
+                <p className="text-xs text-purple-700 uppercase font-semibold tracking-wide">Bank Transfer</p>
+              </div>
+              <p className="text-2xl font-extrabold text-purple-700">{formatCurrency(bankTransferTotal)}</p>
+              <p className="text-xs text-purple-600 mt-1">
+                {reportRows.filter((r) => r.paymentMode === "BankTransfer").length} txn(s)
+              </p>
+            </div>
+          </div>
+
+          {/* Grand Total */}
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <p className="text-xs text-blue-700 uppercase font-semibold tracking-wide">Grand Total (All Time)</p>
+            </div>
+            <p className="text-3xl font-extrabold text-blue-700 mt-2">{formatCurrency(grandTotal)}</p>
           </div>
 
           {/* Print button */}
@@ -141,6 +179,11 @@ export default function FeeReportPage() {
               Fee Collection Report — {new Date(selectedDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
             </p>
             <p className="text-sm mt-1">Daily Total: {formatCurrency(dailyTotal)} | Grand Total: {formatCurrency(grandTotal)}</p>
+            <div className="flex justify-center gap-6 mt-2 text-sm">
+              <span>Cash: <strong>{formatCurrency(cashTotal)}</strong></span>
+              <span>UPI: <strong>{formatCurrency(upiTotal)}</strong></span>
+              <span>Bank Transfer: <strong>{formatCurrency(bankTransferTotal)}</strong></span>
+            </div>
           </div>
 
           {/* Table */}

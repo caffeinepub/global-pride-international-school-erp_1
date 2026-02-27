@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { UserCheck, UserX, Loader2, MessageSquare } from "lucide-react";
+import { UserCheck, UserX, Loader2, MessageSquare, Search } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
 import { AttendanceStatus } from "../backend";
 import type { Student } from "../backend";
@@ -22,6 +22,7 @@ export default function AttendancePage() {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [nameSearch, setNameSearch] = useState("");
 
   const handleLoadStudents = async () => {
     if (!backend) { toast.error("Backend not ready"); return; }
@@ -87,6 +88,11 @@ export default function AttendancePage() {
       setSaving(false);
     }
   };
+
+  const filteredRecords = useMemo(() => {
+    if (!nameSearch.trim()) return records;
+    return records.filter((r) => r.name.toLowerCase().includes(nameSearch.toLowerCase()));
+  }, [records, nameSearch]);
 
   const presentCount = records.filter((r) => r.status === AttendanceStatus.Present).length;
   const absentCount = records.filter((r) => r.status === AttendanceStatus.Absent).length;
@@ -192,14 +198,28 @@ export default function AttendancePage() {
             </div>
           </div>
 
+          {/* Name search filter */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              value={nameSearch}
+              onChange={(e) => setNameSearch(e.target.value)}
+              placeholder="Search student by name..."
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              aria-label="Search student by name"
+            />
+          </div>
+
           <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
             <div className="px-5 py-3 border-b border-border bg-muted/10">
               <p className="text-sm font-semibold text-foreground">
                 {selectedClass} – Section {selectedSection} · {new Date(selectedDate).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
+                {nameSearch.trim() && <span className="ml-2 text-xs text-muted-foreground font-normal">({filteredRecords.length} matching)</span>}
               </p>
             </div>
             <div className="divide-y divide-border">
-              {records.map((record, idx) => (
+              {filteredRecords.map((record, idx) => (
                 <div
                   key={record.studentId.toString()}
                   className={`flex items-center justify-between px-5 py-3.5 transition-colors ${
@@ -244,19 +264,55 @@ export default function AttendancePage() {
             </div>
           </div>
 
-          {/* SMS Previews for absent students */}
+          {/* WhatsApp Notifications for absent students */}
           {absentStudents.length > 0 && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <MessageSquare className="h-4 w-4 text-amber-600" />
-                <h4 className="text-sm font-semibold text-amber-800">SMS Preview for Absent Students</h4>
+            <div className="rounded-xl border border-green-200 bg-green-50 p-5">
+              <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-green-600" />
+                  <h4 className="text-sm font-semibold text-green-800">WhatsApp Web Notifications for Absent Students</h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    absentStudents.forEach((s, idx) => {
+                      const raw = s.contactNumber.replace(/[\s\-()]/g, "");
+                      const phone = raw.startsWith("+") ? raw.slice(1) : raw.startsWith("0") ? `91${raw.slice(1)}` : raw.length <= 10 ? `91${raw}` : raw;
+                      const dateStr = new Date(selectedDate).toLocaleDateString("en-IN");
+                      const msg = `Global Pride International School: Dear Parent, your child ${s.name} of Class ${selectedClass}-${selectedSection} was marked absent on ${dateStr}. Please contact the school for more information.`;
+                      setTimeout(() => {
+                        window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, "_blank");
+                      }, idx * 500);
+                    });
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-green-400 text-green-700 hover:bg-green-100 transition-colors"
+                >
+                  Send All via WhatsApp Web
+                </button>
               </div>
               <div className="space-y-2">
-                {absentStudents.map((s) => (
-                  <div key={s.studentId.toString()} className="text-xs text-amber-700 bg-white/70 rounded-lg px-3 py-2 border border-amber-100">
-                    📱 <strong>To: {s.contactNumber}</strong> — Your child <strong>{s.name}</strong> was absent today ({new Date(selectedDate).toLocaleDateString("en-IN")}) at Global Pride International School. For queries contact school. Thank you.
-                  </div>
-                ))}
+                {absentStudents.map((s) => {
+                  const raw = s.contactNumber.replace(/[\s\-()]/g, "");
+                  const phone = raw.startsWith("+") ? raw.slice(1) : raw.startsWith("0") ? `91${raw.slice(1)}` : raw.length <= 10 ? `91${raw}` : raw;
+                  const dateStr = new Date(selectedDate).toLocaleDateString("en-IN");
+                  const msg = `Global Pride International School: Dear Parent, your child ${s.name} of Class ${selectedClass}-${selectedSection} was marked absent on ${dateStr}. Please contact the school for more information.`;
+                  const waUrl = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+                  return (
+                    <div key={s.studentId.toString()} className="flex items-start justify-between gap-3 bg-white/70 rounded-lg px-3 py-2.5 border border-green-100">
+                      <p className="text-xs text-green-800 flex-1">
+                        <strong>To: {s.contactNumber}</strong> — {msg}
+                      </p>
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors whitespace-nowrap"
+                      >
+                        Send via WhatsApp Web
+                      </a>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

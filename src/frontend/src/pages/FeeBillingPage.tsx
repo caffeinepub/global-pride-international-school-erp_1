@@ -4,7 +4,7 @@ import { Search, Loader2, Printer, CheckCircle } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
 import { FeeCategory, PaymentMode } from "../backend";
 import type { Student, Payment } from "../backend";
-import { FEE_CATEGORY_LABELS, formatCurrency, formatDate } from "../utils/constants";
+import { FEE_CATEGORY_LABELS, formatCurrency, formatDate, getInstallmentAmount, CLASSES, SECTIONS } from "../utils/constants";
 
 const PAYMENT_MODES = [
   { value: PaymentMode.Cash, label: "Cash" },
@@ -12,11 +12,19 @@ const PAYMENT_MODES = [
   { value: PaymentMode.BankTransfer, label: "Bank Transfer" },
 ];
 
+function generateReceiptNo(paymentId: bigint): string {
+  const year = new Date().getFullYear();
+  const paddedId = String(Number(paymentId)).padStart(5, "0");
+  return `GPIS-${year}-${paddedId}`;
+}
+
 export default function FeeBillingPage() {
   const { backend, isFetching: actorFetching } = useBackend();
   const [students, setStudents] = useState<Student[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterClass, setFilterClass] = useState("");
+  const [filterSection, setFilterSection] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<FeeCategory>(FeeCategory.OTP);
@@ -24,6 +32,7 @@ export default function FeeBillingPage() {
   const [paymentMode, setPaymentMode] = useState<PaymentMode>(PaymentMode.Cash);
   const [paying, setPaying] = useState(false);
   const [lastPayment, setLastPayment] = useState<Payment | null>(null);
+  const [lastReceiptNo, setLastReceiptNo] = useState<string>("");
 
   const loadStudents = useCallback(async () => {
     if (!backend) return;
@@ -42,11 +51,14 @@ export default function FeeBillingPage() {
   }, [loadStudents, actorFetching]);
 
   const filteredStudents = useMemo(() => {
-    if (!searchQuery.trim()) return students.slice(0, 8);
-    return students.filter((s) =>
+    let result = students;
+    if (filterClass) result = result.filter((s) => s.studentClass === filterClass);
+    if (filterSection) result = result.filter((s) => s.section === filterSection);
+    if (!searchQuery.trim()) return result.slice(0, 8);
+    return result.filter((s) =>
       s.name.toLowerCase().includes(searchQuery.toLowerCase()),
     ).slice(0, 8);
-  }, [students, searchQuery]);
+  }, [students, searchQuery, filterClass, filterSection]);
 
   const totalPaid = useMemo(
     () => selectedStudent?.payments.reduce((s, p) => s + p.amountPaid, 0) ?? 0,
@@ -61,8 +73,11 @@ export default function FeeBillingPage() {
     setSelectedStudent(student);
     setSearchQuery(student.name);
     setShowDropdown(false);
-    setAmount("");
     setLastPayment(null);
+    setLastReceiptNo("");
+    // Auto-fill fee category and amount from student data
+    setSelectedCategory(student.feePaymentCategory);
+    setAmount(String(getInstallmentAmount(student.finalFee, student.feePaymentCategory)));
   };
 
   const handlePay = async () => {
@@ -80,7 +95,9 @@ export default function FeeBillingPage() {
         paymentMode,
         selectedCategory,
       );
-      toast.success(`Payment of ${formatCurrency(amountNum)} recorded!`);
+      const receiptNo = generateReceiptNo(id);
+      setLastReceiptNo(receiptNo);
+      toast.success(`Payment of ${formatCurrency(amountNum)} recorded! Receipt: ${receiptNo}`);
       // Refresh student data
       const refreshed = await backend.getStudentById(selectedStudent.id);
       if (refreshed) {
@@ -113,6 +130,33 @@ export default function FeeBillingPage() {
       {/* Student Search */}
       <div className="rounded-xl border border-border bg-card shadow-xs p-5">
         <h3 className="text-sm font-semibold text-foreground mb-3">Select Student</h3>
+        {/* Class/Section filter */}
+        <div className="flex flex-wrap gap-3 mb-3">
+          <div className="flex-1 min-w-36">
+            <label htmlFor="fb-class" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Filter by Class</label>
+            <select
+              id="fb-class"
+              value={filterClass}
+              onChange={(e) => { setFilterClass(e.target.value); setShowDropdown(true); }}
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">All Classes</option>
+              {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-32">
+            <label htmlFor="fb-section" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Filter by Section</label>
+            <select
+              id="fb-section"
+              value={filterSection}
+              onChange={(e) => { setFilterSection(e.target.value); setShowDropdown(true); }}
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">All Sections</option>
+              {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <input
@@ -266,7 +310,7 @@ export default function FeeBillingPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground">Receipt No.</p>
-                  <p className="font-semibold">#{lastPayment.id.toString()}</p>
+                  <p className="font-semibold font-mono">{lastReceiptNo}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Date</p>
@@ -305,6 +349,7 @@ export default function FeeBillingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/20 border-b border-border">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Receipt No.</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Amount</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mode</th>
@@ -314,6 +359,7 @@ export default function FeeBillingPage() {
                   <tbody className="divide-y divide-border">
                     {[...selectedStudent.payments].reverse().map((p) => (
                       <tr key={p.id.toString()} className="hover:bg-muted/10">
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{generateReceiptNo(p.id)}</td>
                         <td className="px-4 py-3 text-muted-foreground">{formatDate(p.paymentDate)}</td>
                         <td className="px-4 py-3 font-semibold text-emerald-700">{formatCurrency(p.amountPaid)}</td>
                         <td className="px-4 py-3">{p.paymentMode}</td>

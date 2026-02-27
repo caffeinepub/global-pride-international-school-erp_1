@@ -27,6 +27,12 @@ export const TransportOption = IDL.Variant({
   'OnlyDrop' : IDL.Null,
   'PickUpDrop' : IDL.Null,
 });
+export const StudentExtras = IDL.Record({
+  'studentId' : IDL.Nat,
+  'dateOfBirth' : IDL.Text,
+  'aadharNo' : IDL.Text,
+  'admissionNo' : IDL.Text,
+});
 export const Payment = IDL.Record({
   'id' : IDL.Nat,
   'studentId' : IDL.Nat,
@@ -111,9 +117,11 @@ export const idlService = IDL.Service({
     ),
   'deleteStudent' : IDL.Func([IDL.Nat], [], []),
   'deleteTransportStudent' : IDL.Func([IDL.Nat], [], []),
+  'getAllStudentExtras' : IDL.Func([], [IDL.Vec(StudentExtras)], ['query']),
   'getAllStudents' : IDL.Func([], [IDL.Vec(Student)], ['query']),
   'getReportCard' : IDL.Func([IDL.Nat], [IDL.Opt(ReportCard)], ['query']),
   'getStudentById' : IDL.Func([IDL.Nat], [IDL.Opt(Student)], ['query']),
+  'getStudentExtras' : IDL.Func([IDL.Nat], [IDL.Opt(StudentExtras)], ['query']),
   'getUnpaidTransportStudents' : IDL.Func(
       [IDL.Nat, IDL.Nat],
       [IDL.Vec(TransportStudent)],
@@ -132,6 +140,11 @@ export const idlService = IDL.Service({
         IDL.Vec(IDL.Text),
         IDL.Vec(IDL.Vec(IDL.Float64)),
       ],
+      [],
+      [],
+    ),
+  'setStudentExtras' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
       [],
       [],
     ),
@@ -182,6 +195,12 @@ export const idlFactory = ({ IDL }) => {
     'OnlyPickUp' : IDL.Null,
     'OnlyDrop' : IDL.Null,
     'PickUpDrop' : IDL.Null,
+  });
+  const StudentExtras = IDL.Record({
+    'studentId' : IDL.Nat,
+    'dateOfBirth' : IDL.Text,
+    'aadharNo' : IDL.Text,
+    'admissionNo' : IDL.Text,
   });
   const Payment = IDL.Record({
     'id' : IDL.Nat,
@@ -267,9 +286,15 @@ export const idlFactory = ({ IDL }) => {
       ),
     'deleteStudent' : IDL.Func([IDL.Nat], [], []),
     'deleteTransportStudent' : IDL.Func([IDL.Nat], [], []),
+    'getAllStudentExtras' : IDL.Func([], [IDL.Vec(StudentExtras)], ['query']),
     'getAllStudents' : IDL.Func([], [IDL.Vec(Student)], ['query']),
     'getReportCard' : IDL.Func([IDL.Nat], [IDL.Opt(ReportCard)], ['query']),
     'getStudentById' : IDL.Func([IDL.Nat], [IDL.Opt(Student)], ['query']),
+    'getStudentExtras' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Opt(StudentExtras)],
+        ['query'],
+      ),
     'getUnpaidTransportStudents' : IDL.Func(
         [IDL.Nat, IDL.Nat],
         [IDL.Vec(TransportStudent)],
@@ -292,6 +317,11 @@ export const idlFactory = ({ IDL }) => {
           IDL.Vec(IDL.Text),
           IDL.Vec(IDL.Vec(IDL.Float64)),
         ],
+        [],
+        [],
+      ),
+    'setStudentExtras' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
         [],
         [],
       ),

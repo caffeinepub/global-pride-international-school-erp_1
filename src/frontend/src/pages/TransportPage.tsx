@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Loader2, X, CheckCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, X, CheckCircle, Search, Printer } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
 import { TransportOption } from "../backend";
 import type { TransportStudent } from "../backend";
@@ -22,6 +22,24 @@ const EMPTY_FORM = {
 
 type FormState = typeof EMPTY_FORM;
 
+interface TransportReceipt {
+  receiptNo: string;
+  date: string;
+  studentName: string;
+  fatherName: string;
+  contactNumber: string;
+  transportOption: string;
+  amount: number;
+  month: number;
+  year: number;
+}
+
+function generateTransportReceiptNo(studentId: bigint): string {
+  const year = new Date().getFullYear();
+  const paddedId = String(Number(studentId)).padStart(5, "0");
+  return `TRANS-${year}-${paddedId}`;
+}
+
 export default function TransportPage() {
   const { backend, isFetching: actorFetching } = useBackend();
   const [students, setStudents] = useState<TransportStudent[]>([]);
@@ -40,6 +58,18 @@ export default function TransportPage() {
   const [loadingUnpaid, setLoadingUnpaid] = useState(false);
   const [unpaidShown, setUnpaidShown] = useState(false);
   const [markingId, setMarkingId] = useState<bigint | null>(null);
+
+  // Transport billing state
+  const [billingSearch, setBillingSearch] = useState("");
+  const [billingDropdown, setBillingDropdown] = useState(false);
+  const [billingStudent, setBillingStudent] = useState<TransportStudent | null>(null);
+  const [billingMonth, setBillingMonth] = useState(currentDate.getMonth() + 1);
+  const [billingYear, setBillingYear] = useState(currentDate.getFullYear());
+  const [billingProcessing, setBillingProcessing] = useState(false);
+  const [billingReceipt, setBillingReceipt] = useState<TransportReceipt | null>(null);
+
+  // Student list name search
+  const [listSearch, setListSearch] = useState("");
 
   const loadTransportStudents = useCallback(async () => {
     if (!backend) return;
@@ -149,6 +179,47 @@ export default function TransportPage() {
       toast.error("Failed to mark as paid");
     } finally {
       setMarkingId(null);
+    }
+  };
+
+  // Billing handlers
+  const billingFilteredStudents = students.filter((s) =>
+    !billingSearch.trim() || s.name.toLowerCase().includes(billingSearch.toLowerCase()),
+  ).slice(0, 8);
+
+  const handleSelectBillingStudent = (s: TransportStudent) => {
+    setBillingStudent(s);
+    setBillingSearch(s.name);
+    setBillingDropdown(false);
+    setBillingReceipt(null);
+  };
+
+  const handleRecordTransportPayment = async () => {
+    if (!backend) { toast.error("Backend not ready"); return; }
+    if (!billingStudent) { toast.error("No student selected"); return; }
+    setBillingProcessing(true);
+    try {
+      await backend.markTransportFeePaid(billingStudent.id, BigInt(billingMonth), BigInt(billingYear));
+      const receiptNo = generateTransportReceiptNo(billingStudent.id);
+      const transportLabel = TRANSPORT_OPTIONS.find((o) => o.value === billingStudent.transportOption)?.label ?? billingStudent.transportOption;
+      setBillingReceipt({
+        receiptNo,
+        date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
+        studentName: billingStudent.name,
+        fatherName: billingStudent.fatherName,
+        contactNumber: billingStudent.contactNumber,
+        transportOption: transportLabel,
+        amount: billingStudent.monthlyFee,
+        month: billingMonth,
+        year: billingYear,
+      });
+      toast.success(`Transport fee recorded! Receipt: ${receiptNo}`);
+      // Refresh students list
+      await loadTransportStudents();
+    } catch {
+      toast.error("Failed to record payment");
+    } finally {
+      setBillingProcessing(false);
     }
   };
 
@@ -284,8 +355,19 @@ export default function TransportPage() {
 
       {/* Transport Student List */}
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-        <div className="px-5 py-3 border-b border-border">
+        <div className="px-5 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-foreground">Transport Students ({students.length})</h3>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              value={listSearch}
+              onChange={(e) => setListSearch(e.target.value)}
+              placeholder="Search by name..."
+              className="pl-9 pr-4 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary w-56"
+              aria-label="Search transport students"
+            />
+          </div>
         </div>
         {loading ? (
           <div className="py-16 flex justify-center">
@@ -309,7 +391,7 @@ export default function TransportPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {students.map((s) => (
+                {students.filter((s) => !listSearch.trim() || s.name.toLowerCase().includes(listSearch.toLowerCase())).map((s) => (
                   <tr key={s.id.toString()} className="hover:bg-muted/10 transition-colors">
                     <td className="px-4 py-3 font-medium text-foreground">{s.name}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{s.fatherName}</td>
@@ -446,6 +528,181 @@ export default function TransportPage() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Transport Billing */}
+      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+        <div
+          className="px-5 py-4 border-b border-border"
+          style={{ background: "oklch(0.96 0.025 155)" }}
+        >
+          <h3 className="text-sm font-semibold text-foreground">Transport Billing</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Record transport fee payment and generate receipt</p>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Student Search */}
+          <div>
+            <label htmlFor="billing-student-search" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+              Select Transport Student
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <input
+                id="billing-student-search"
+                type="text"
+                value={billingSearch}
+                onChange={(e) => { setBillingSearch(e.target.value); setBillingDropdown(true); setBillingStudent(null); setBillingReceipt(null); }}
+                onFocus={() => setBillingDropdown(true)}
+                placeholder="Search transport student by name..."
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              {billingDropdown && billingSearch && billingFilteredStudents.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                  {billingFilteredStudents.map((s) => (
+                    <button
+                      key={s.id.toString()}
+                      type="button"
+                      className="w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-muted/40 transition-colors text-left"
+                      onClick={() => handleSelectBillingStudent(s)}
+                    >
+                      <span className="font-medium text-foreground">{s.name}</span>
+                      <span className="text-xs text-muted-foreground">{formatCurrency(s.monthlyFee)}/mo</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Selected Student Info */}
+          {billingStudent && (
+            <>
+              <div className="rounded-lg border border-border bg-secondary/30 p-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Student</p>
+                    <p className="font-semibold text-foreground">{billingStudent.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Father</p>
+                    <p className="font-medium text-foreground">{billingStudent.fatherName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Contact</p>
+                    <p className="font-medium text-foreground">{billingStudent.contactNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Monthly Fee</p>
+                    <p className="font-bold text-primary">{formatCurrency(billingStudent.monthlyFee)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Month/Year + Record Button */}
+              <div className="flex flex-wrap gap-3 items-end">
+                <div>
+                  <label htmlFor="billing-month" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Month</label>
+                  <select
+                    id="billing-month"
+                    value={billingMonth}
+                    onChange={(e) => { setBillingMonth(Number(e.target.value)); setBillingReceipt(null); }}
+                    className="px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {MONTHS.map((m, i) => (
+                      <option key={m} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="billing-year" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Year</label>
+                  <select
+                    id="billing-year"
+                    value={billingYear}
+                    onChange={(e) => { setBillingYear(Number(e.target.value)); setBillingReceipt(null); }}
+                    className="px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value={2025}>2025</option>
+                    <option value={2026}>2026</option>
+                    <option value={2027}>2027</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRecordTransportPayment}
+                  disabled={billingProcessing}
+                  className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60"
+                  style={{ background: "oklch(0.48 0.15 155)" }}
+                >
+                  {billingProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {billingProcessing ? "Processing..." : "Record Payment"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Transport Receipt */}
+          {billingReceipt && (
+            <div className="print-receipt rounded-xl border border-emerald-200 bg-emerald-50 p-5 mt-2">
+              {/* Bill No. — prominent header */}
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-emerald-200">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    <h4 className="text-sm font-semibold text-emerald-800">Transport Fee Receipt</h4>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-xs text-emerald-700 uppercase font-semibold tracking-wide">Bill No.</span>
+                    <span className="text-xl font-extrabold font-mono text-emerald-900 bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-lg tracking-wider">
+                      {billingReceipt.receiptNo}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="no-print flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  Print Receipt
+                </button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="font-semibold">{billingReceipt.date}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Month / Year</p>
+                  <p className="font-semibold">{MONTHS[billingReceipt.month - 1]} {billingReceipt.year}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Student Name</p>
+                  <p className="font-semibold">{billingReceipt.studentName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Father Name</p>
+                  <p className="font-semibold">{billingReceipt.fatherName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Contact</p>
+                  <p className="font-semibold">{billingReceipt.contactNumber}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Transport Option</p>
+                  <p className="font-semibold">{billingReceipt.transportOption}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Amount Paid</p>
+                  <p className="text-lg font-bold text-emerald-700">{formatCurrency(billingReceipt.amount)}</p>
+                </div>
+              </div>
+              <p className="text-xs text-emerald-600 mt-3 border-t border-emerald-200 pt-2">
+                Global Pride International School · Transport Fee Receipt
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

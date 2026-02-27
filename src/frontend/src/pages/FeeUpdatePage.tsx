@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Search } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
 import { FeeCategory } from "../backend";
 import type { Student } from "../backend";
@@ -20,6 +20,7 @@ export default function FeeUpdatePage() {
   const [loading, setLoading] = useState(false);
   const [unpaidStudents, setUnpaidStudents] = useState<Student[]>([]);
   const [searched, setSearched] = useState(false);
+  const [nameSearch, setNameSearch] = useState("");
 
   const handleShowUnpaid = useCallback(async () => {
     if (!backend) { toast.error("Backend not ready"); return; }
@@ -46,6 +47,11 @@ export default function FeeUpdatePage() {
       setLoading(false);
     }
   }, [backend, selectedClass, selectedSection, selectedCategory]);
+
+  const filteredUnpaid = useMemo(() => {
+    if (!nameSearch.trim()) return unpaidStudents;
+    return unpaidStudents.filter((s) => s.name.toLowerCase().includes(nameSearch.toLowerCase()));
+  }, [unpaidStudents, nameSearch]);
 
   return (
     <div className="space-y-6">
@@ -116,7 +122,7 @@ export default function FeeUpdatePage() {
       {/* Results */}
       {searched && !loading && (
         <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="font-semibold text-foreground text-sm">
                 Unpaid Students — {selectedClass} / Section {selectedSection} / {FEE_CATEGORY_LABELS[selectedCategory]}
@@ -132,6 +138,22 @@ export default function FeeUpdatePage() {
               </div>
             )}
           </div>
+
+          {unpaidStudents.length > 0 && (
+            <div className="px-5 py-3 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <input
+                  type="text"
+                  value={nameSearch}
+                  onChange={(e) => setNameSearch(e.target.value)}
+                  placeholder="Search student by name..."
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  aria-label="Search unpaid students by name"
+                />
+              </div>
+            </div>
+          )}
 
           {unpaidStudents.length === 0 ? (
             <div className="py-16 text-center">
@@ -157,7 +179,7 @@ export default function FeeUpdatePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {unpaidStudents.map((student, idx) => (
+                  {filteredUnpaid.map((student, idx) => (
                     <tr key={student.id.toString()} className="hover:bg-amber-50/30 transition-colors">
                       <td className="px-4 py-3 text-muted-foreground text-xs font-mono">{idx + 1}</td>
                       <td className="px-4 py-3 font-medium text-foreground">{student.name}</td>
@@ -179,11 +201,11 @@ export default function FeeUpdatePage() {
                 <tfoot className="border-t border-border bg-muted/10">
                   <tr>
                     <td colSpan={5} className="px-4 py-3 text-xs font-semibold text-muted-foreground text-right">
-                      Total Outstanding
+                      Total Outstanding{nameSearch.trim() ? ` (filtered)` : ""}
                     </td>
                     <td className="px-4 py-3 font-bold text-amber-700 text-base">
                       {formatCurrency(
-                        unpaidStudents.reduce(
+                        filteredUnpaid.reduce(
                           (sum, s) => sum + getInstallmentAmount(s.finalFee, selectedCategory),
                           0,
                         ),

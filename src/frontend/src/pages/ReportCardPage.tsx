@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, Printer, BookOpen } from "lucide-react";
+import { Plus, Trash2, Loader2, Printer, BookOpen, Search } from "lucide-react";
 import { useBackend } from "../hooks/useBackend";
 import type { Student, ReportCard } from "../backend";
+import { CLASSES, SECTIONS } from "../utils/constants";
 
 export default function ReportCardPage() {
   const { backend, isFetching: actorFetching } = useBackend();
@@ -14,10 +15,23 @@ export default function ReportCardPage() {
   const [loadingRC, setLoadingRC] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Student filter state
+  const [rcNameSearch, setRcNameSearch] = useState("");
+  const [rcFilterClass, setRcFilterClass] = useState("");
+  const [rcFilterSection, setRcFilterSection] = useState("");
+
   // Editable state
   const [subjects, setSubjects] = useState<string[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [marks, setMarks] = useState<number[][]>([]);
+
+  const filteredStudents = useMemo(() => {
+    let result = students;
+    if (rcFilterClass) result = result.filter((s) => s.studentClass === rcFilterClass);
+    if (rcFilterSection) result = result.filter((s) => s.section === rcFilterSection);
+    if (rcNameSearch.trim()) result = result.filter((s) => s.name.toLowerCase().includes(rcNameSearch.toLowerCase()));
+    return result;
+  }, [students, rcNameSearch, rcFilterClass, rcFilterSection]);
 
   const loadStudents = useCallback(async () => {
     if (!backend) return;
@@ -136,8 +150,45 @@ export default function ReportCardPage() {
 
       {/* Student selector */}
       <div className="no-print rounded-xl border border-border bg-card shadow-xs p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Select Student</h3>
+        {/* Filter row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              value={rcNameSearch}
+              onChange={(e) => setRcNameSearch(e.target.value)}
+              placeholder="Search by name..."
+              className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              aria-label="Search student by name"
+            />
+          </div>
+          <div>
+            <select
+              value={rcFilterClass}
+              onChange={(e) => setRcFilterClass(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              aria-label="Filter by class"
+            >
+              <option value="">All Classes</option>
+              {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <select
+              value={rcFilterSection}
+              onChange={(e) => setRcFilterSection(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              aria-label="Filter by section"
+            >
+              <option value="">All Sections</option>
+              {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
         <label htmlFor="rc-student" className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
-          Select Student
+          Select Student {filteredStudents.length !== students.length && `(${filteredStudents.length} shown)`}
         </label>
         <select
           id="rc-student"
@@ -149,7 +200,7 @@ export default function ReportCardPage() {
           disabled={loadingStudents}
         >
           <option value="">-- Select a student --</option>
-          {students.map((s) => (
+          {filteredStudents.map((s) => (
             <option key={s.id.toString()} value={s.id.toString()}>
               {s.name} — {s.studentClass} / {s.section}
             </option>

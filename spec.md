@@ -1,53 +1,37 @@
 # Global Pride International School ERP
 
 ## Current State
-New project. No existing code.
+Full-stack school ERP with: Login, Dashboard, Students (with DOB/Aadhar/Admission No), Attendance (with WhatsApp absent notification), Fee Billing (with receipt numbers), Fee Update, Fee Report (daily + all-time totals), Transport (students + monthly billing with receipt), Report Card.
+
+Backend stores: students, payments, transport students, transport monthly payments, attendance records, student extras.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Full School ERP web application for Academic Year 2026–2027
-- Login page with hardcoded credentials (username: "global Pride international school", password: "gpis@syeds")
-- Dashboard with summary cards and per-class student counts
-- Students page: add/edit/delete students with fee structure, discount, and exam fee options
-- Attendance page: class/section selection, present/absent toggle, SMS preview for absent students, attendance history
-- Fee/Billing page: payment recording, receipt printing, payment history
-- Fee Update page: unpaid fee tracking by class/section/category
-- Fee Report page: date-based collection report with print/export
-- Transport page: transport student management, monthly fee tracking
-- Report Card page: dynamic editable proforma with subject/column management and print support
-- localStorage-based persistence for all data (students, attendance, fees, transport, report cards)
-- Green-themed responsive design with sidebar navigation
-- All 13 classes (Nursery, PP1, PP2, Grade 1–10), 5 sections each (A–E)
+- **Transport Billing: Bill No (Receipt No) field** -- Auto-generate a unique bill number (like `TRANS-2026-XXXXX`) for each transport payment. This is already partially done in frontend but needs to be a sequential/unique number. The receipt should show the Bill No prominently.
+- **Fee Report: Cash total and UPI total separately** -- In addition to the existing "Daily Total", show a "Cash Total" card and "UPI Total" card (and Bank Transfer if any) for the selected day. These breakdowns should appear in the summary cards area and in the print header.
+- **WhatsApp absent messages via WhatsApp Web** -- Change the "Send via WhatsApp" links to use `https://web.whatsapp.com/send?phone=...&text=...` instead of `https://wa.me/...` so messages open in WhatsApp Web (browser-based login), not the app.
+- **Search by name, grade/class, and section on every page** -- Add a unified search/filter bar (name search + class dropdown + section dropdown) to all pages that list students: Students page (already has it), Fee Billing page (add class/section filter alongside the existing name search), Fee Update page (already has class/section; add name search), Attendance page (already has class/section; add name search filter on the loaded list), Transport page (add name search on the student list), Report Card page (add name search + class/section filter to the student selector dropdown).
+- **Auto-fill payment type and amount in Fee Billing** -- When a student is selected in Fee Billing, automatically set the Fee Category to the student's `feePaymentCategory` and set the Amount field to the student's installment amount (calculated from `finalFee` and `feePaymentCategory` using `getInstallmentAmount`). The user can still change these values manually.
 
 ### Modify
-- N/A (new project)
+- **FeeReportPage**: Add `cashTotal` and `upiTotal` (and `bankTransferTotal`) computed from `reportRows`, display as separate summary cards alongside the existing daily total card. Update print header to include the breakdown.
+- **TransportPage (Billing section)**: Ensure the bill/receipt number is shown as a prominent "Bill No." field at the top of the receipt block.
+- **AttendancePage**: Change WhatsApp links from `wa.me` to `web.whatsapp.com/send?phone=...&text=...`.
+- **FeeBillingPage**: On student selection, auto-populate Fee Category from `student.feePaymentCategory` and Amount from `getInstallmentAmount(student.finalFee, student.feePaymentCategory)`. Also add class/section filter dropdowns to the student search.
+- **ReportCardPage**: Add name search input + class/section dropdowns to filter the student list before selection.
 
 ### Remove
-- N/A (new project)
+- Nothing removed.
 
 ## Implementation Plan
-1. Set up authentication state with hardcoded credentials stored in app state
-2. Create localStorage hooks/utilities for students, attendance, fees, transport, report cards
-3. Build Login page with green theme and GPIS logo
-4. Build Sidebar navigation with all menu items and icons
-5. Build Dashboard page with summary cards and class breakdown table
-6. Build Students page: add form with fee calculator, student list with search/filter/edit/delete
-7. Build Attendance page: class/section picker, student list with present/absent toggles, save, history
-8. Build Fee/Billing page: student selector, payment form, receipt print modal, payment history
-9. Build Fee Update page: unpaid fee list by class/section/category
-10. Build Fee Report page: date picker, collection table, daily total, print support
-11. Build Transport page: add transport student form, list, monthly fee paid/unpaid tracking
-12. Build Report Card page: dynamic table with editable headers, mark entry, print layout
-13. Wire all localStorage persistence across pages
-14. Add toast notifications for all actions
-
-## UX Notes
-- Green color palette: #16a34a (primary), #15803d (dark), #166534 (darker), #dcfce7 (light bg)
-- Sidebar: collapsible on mobile, always visible on desktop
-- GPIS logo: green circle with white "GPIS" text
-- All forms use clean card layouts with proper validation
-- Print layouts hide sidebar and show only the printable content
-- Fee auto-calculation updates live as user types
-- Responsive tables with horizontal scroll on mobile
-- Toast notifications (success/error) for all CRUD and payment actions
+1. **FeeReportPage.tsx**: Compute `cashTotal`, `upiTotal`, `bankTransferTotal` from `reportRows` (filter by `paymentMode`). Add 2-3 new summary cards for Cash/UPI/Bank Transfer totals. Update print header line.
+2. **TransportPage.tsx**: Ensure receipt displays "Bill No." as a labeled field prominently (it already generates the number; just make the label clearer in the receipt block).
+3. **AttendancePage.tsx**: Change all `https://wa.me/` to `https://web.whatsapp.com/send?phone=` in the WhatsApp URL construction.
+4. **FeeBillingPage.tsx**: 
+   - On `handleSelectStudent`, auto-set `selectedCategory` to `student.feePaymentCategory` and `amount` to the string of `getInstallmentAmount(student.finalFee, student.feePaymentCategory)`.
+   - Add `filterClass` and `filterSection` state, and add class/section filter dropdowns to the student search area.
+5. **FeeUpdatePage.tsx**: Add a name search input to filter the unpaid student list after it is loaded.
+6. **ReportCardPage.tsx**: Add `rcSearch`, `rcFilterClass`, `rcFilterSection` state; filter the student dropdown options by those values.
+7. **TransportPage.tsx (student list)**: Add name search input to filter the transport students list table.
+8. **AttendancePage.tsx**: Add a name search input to filter the loaded attendance records list.
