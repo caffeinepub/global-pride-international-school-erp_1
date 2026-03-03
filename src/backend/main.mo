@@ -1,10 +1,10 @@
-import Array "mo:core/Array";
 import Map "mo:core/Map";
 import List "mo:core/List";
+import Array "mo:core/Array";
 import Nat "mo:core/Nat";
 import Order "mo:core/Order";
-import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
+import Runtime "mo:core/Runtime";
 
 
 
@@ -138,16 +138,16 @@ actor {
   };
 
   // State
-  var nextStudentId = 1;
-  var nextAttendanceId = 1;
-  var nextTransportId = 1;
-  var nextPaymentId = 1;
-  var nextTransportPaymentId = 1;
+  stable var nextStudentId = 1;
+  stable var nextAttendanceId = 1;
+  stable var nextTransportId = 1;
+  stable var nextPaymentId = 1;
+  stable var nextTransportPaymentId = 1;
 
-  let students = Map.empty<Nat, Student>();
-  let transportStudents = Map.empty<Nat, TransportStudent>();
-  let attendanceRecords = List.empty<AttendanceRecord>();
-  let studentExtras = Map.empty<Nat, StudentExtras>();
+  stable let students = Map.empty<Nat, Student>();
+  stable let transportStudents = Map.empty<Nat, TransportStudent>();
+  stable let attendanceRecords = List.empty<AttendanceRecord>();
+  stable let studentExtras = Map.empty<Nat, StudentExtras>();
 
   // Student Functions
   public shared ({ caller }) func addStudent(
@@ -453,3 +453,4 @@ actor {
     studentExtras.values().toArray().sort(func(a : StudentExtras, b : StudentExtras) : Order.Order { Nat.compare(a.studentId, b.studentId) });
   };
 };
+

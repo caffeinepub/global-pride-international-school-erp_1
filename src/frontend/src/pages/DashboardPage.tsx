@@ -1,8 +1,7 @@
+import { AlertCircle, DollarSign, TrendingUp, Users } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Users, DollarSign, AlertCircle, TrendingUp } from "lucide-react";
-import { useBackend } from "../hooks/useBackend";
-import type { Student } from "../backend";
 import { CLASSES, formatCurrency } from "../utils/constants";
+import { type Student, getAllStudents } from "../utils/localStore";
 
 interface ClassBreakdown {
   className: string;
@@ -11,24 +10,19 @@ interface ClassBreakdown {
 }
 
 export default function DashboardPage() {
-  const { backend, isFetching: actorFetching } = useBackend();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!backend || actorFetching) return;
-    const load = async () => {
-      try {
-        const data = await backend.getAllStudents();
-        setStudents(data);
-      } catch (err) {
-        console.error("Failed to load students", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [backend, actorFetching]);
+    try {
+      const data = getAllStudents();
+      setStudents(data);
+    } catch (err) {
+      console.error("Failed to load students", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const totalFeeCollected = students.reduce(
     (sum, s) => sum + s.payments.reduce((ps, p) => ps + p.amountPaid, 0),
@@ -81,7 +75,7 @@ export default function DashboardPage() {
     },
   ];
 
-  if (loading || actorFetching) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
@@ -116,9 +110,13 @@ export default function DashboardPage() {
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     {card.label}
                   </p>
-                  <p className={`text-2xl font-bold mt-1.5 ${card.color}`}>{card.value}</p>
+                  <p className={`text-2xl font-bold mt-1.5 ${card.color}`}>
+                    {card.value}
+                  </p>
                 </div>
-                <div className={`p-2.5 rounded-lg ${card.bg} border ${card.borderColor}`}>
+                <div
+                  className={`p-2.5 rounded-lg ${card.bg} border ${card.borderColor}`}
+                >
                   <Icon className={`h-5 w-5 ${card.color}`} />
                 </div>
               </div>
@@ -131,7 +129,9 @@ export default function DashboardPage() {
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold text-foreground text-sm">Class-wise Student Breakdown</h3>
+          <h3 className="font-semibold text-foreground text-sm">
+            Class-wise Student Breakdown
+          </h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -153,8 +153,13 @@ export default function DashboardPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {classBreakdown.map((row) => (
-                <tr key={row.className} className="hover:bg-muted/20 transition-colors">
-                  <td className="px-5 py-3 font-medium text-foreground">{row.className}</td>
+                <tr
+                  key={row.className}
+                  className="hover:bg-muted/20 transition-colors"
+                >
+                  <td className="px-5 py-3 font-medium text-foreground">
+                    {row.className}
+                  </td>
                   <td className="px-5 py-3 text-muted-foreground">
                     {row.sections.length > 0 ? row.sections.join(", ") : "—"}
                   </td>
@@ -172,12 +177,16 @@ export default function DashboardPage() {
                   <td className="px-5 py-3">
                     <span
                       className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-                        row.count > 0 ? "text-emerald-600" : "text-muted-foreground"
+                        row.count > 0
+                          ? "text-emerald-600"
+                          : "text-muted-foreground"
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          row.count > 0 ? "bg-emerald-500" : "bg-muted-foreground/40"
+                          row.count > 0
+                            ? "bg-emerald-500"
+                            : "bg-muted-foreground/40"
                         }`}
                       />
                       {row.count > 0 ? "Active" : "No students"}
@@ -189,7 +198,10 @@ export default function DashboardPage() {
           </table>
         </div>
         <div className="px-5 py-3 bg-muted/20 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-          <span>Total: {classBreakdown.reduce((s, c) => s + c.count, 0)} students across {classBreakdown.filter((c) => c.count > 0).length} classes</span>
+          <span>
+            Total: {classBreakdown.reduce((s, c) => s + c.count, 0)} students
+            across {classBreakdown.filter((c) => c.count > 0).length} classes
+          </span>
           <span className="font-medium text-foreground">AY 2026–27</span>
         </div>
       </div>

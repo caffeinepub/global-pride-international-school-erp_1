@@ -1,18 +1,18 @@
-import { useState } from "react";
 import {
-  LayoutDashboard,
-  Users,
-  CalendarCheck,
-  CreditCard,
-  RefreshCw,
-  FileText,
-  Bus,
   BookOpen,
+  Bus,
+  CalendarCheck,
+  ChevronRight,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
   LogOut,
   Menu,
+  RefreshCw,
+  Users,
   X,
-  ChevronRight,
 } from "lucide-react";
+import { useState } from "react";
 import type { Page } from "../App";
 
 interface NavItem {
@@ -39,7 +39,12 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-export default function Layout({ currentPage, onNavigate, onLogout, children }: LayoutProps) {
+export default function Layout({
+  currentPage,
+  onNavigate,
+  onLogout,
+  children,
+}: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleNav = (page: Page) => {
@@ -53,11 +58,20 @@ export default function Layout({ currentPage, onNavigate, onLogout, children }: 
       <div className="p-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shrink-0 shadow-md">
-            <span className="text-xs font-extrabold" style={{ color: "oklch(0.28 0.09 155)" }}>GPIS</span>
+            <span
+              className="text-xs font-extrabold"
+              style={{ color: "oklch(0.28 0.09 155)" }}
+            >
+              GPIS
+            </span>
           </div>
           <div className="min-w-0">
-            <p className="text-sidebar-foreground font-bold text-sm leading-tight">Global Pride</p>
-            <p className="text-sidebar-foreground/70 text-xs">International School</p>
+            <p className="text-sidebar-foreground font-bold text-sm leading-tight">
+              Global Pride
+            </p>
+            <p className="text-sidebar-foreground/70 text-xs">
+              International School
+            </p>
           </div>
         </div>
         <div className="mt-3 px-2 py-1 rounded-md text-xs text-sidebar-foreground/60 bg-sidebar-accent/30 text-center">
@@ -71,7 +85,7 @@ export default function Layout({ currentPage, onNavigate, onLogout, children }: 
           const Icon = item.icon;
           const isActive = currentPage === item.id;
           return (
-              <button
+            <button
               type="button"
               key={item.id}
               onClick={() => handleNav(item.id)}
@@ -81,7 +95,9 @@ export default function Layout({ currentPage, onNavigate, onLogout, children }: 
                   : "text-sidebar-foreground/75 hover:bg-white/8 hover:text-white"
               }`}
             >
-              <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-white" : "text-sidebar-foreground/60 group-hover:text-white"}`} />
+              <Icon
+                className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-white" : "text-sidebar-foreground/60 group-hover:text-white"}`}
+              />
               <span className="flex-1 text-left">{item.label}</span>
               {isActive && <ChevronRight className="h-3 w-3 text-white/70" />}
             </button>
@@ -133,7 +149,11 @@ export default function Layout({ currentPage, onNavigate, onLogout, children }: 
       >
         <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
           <span className="text-white font-bold text-sm">GPIS Menu</span>
-          <button type="button" onClick={() => setSidebarOpen(false)} className="text-white/70 hover:text-white">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="text-white/70 hover:text-white"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -143,9 +163,7 @@ export default function Layout({ currentPage, onNavigate, onLogout, children }: 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header
-          className="top-header-bar no-print h-14 shrink-0 flex items-center justify-between px-4 border-b border-border bg-card shadow-xs"
-        >
+        <header className="top-header-bar no-print h-14 shrink-0 flex items-center justify-between px-4 border-b border-border bg-card shadow-xs">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -156,9 +174,12 @@ export default function Layout({ currentPage, onNavigate, onLogout, children }: 
             </button>
             <div>
               <h1 className="text-sm font-semibold text-foreground leading-tight">
-                {navItems.find((n) => n.id === currentPage)?.label ?? "Dashboard"}
+                {navItems.find((n) => n.id === currentPage)?.label ??
+                  "Dashboard"}
               </h1>
-              <p className="text-xs text-muted-foreground">Global Pride International School</p>
+              <p className="text-xs text-muted-foreground">
+                Global Pride International School
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -169,16 +190,12 @@ export default function Layout({ currentPage, onNavigate, onLogout, children }: 
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
 
         {/* Footer */}
         <footer className="no-print shrink-0 px-4 lg:px-6 py-3 border-t border-border bg-card text-center">
           <p className="text-xs text-muted-foreground">
-            © 2026. Built with{" "}
-            <span className="text-red-400">♥</span>{" "}
-            using{" "}
+            © 2026. Built with <span className="text-red-400">♥</span> using{" "}
             <a
               href="https://caffeine.ai"
               target="_blank"

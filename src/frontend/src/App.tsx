@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
-import LoginPage from "./pages/LoginPage";
+import { useEffect, useState } from "react";
 import Layout from "./components/Layout";
-import DashboardPage from "./pages/DashboardPage";
-import StudentsPage from "./pages/StudentsPage";
 import AttendancePage from "./pages/AttendancePage";
+import DashboardPage from "./pages/DashboardPage";
 import FeeBillingPage from "./pages/FeeBillingPage";
-import FeeUpdatePage from "./pages/FeeUpdatePage";
 import FeeReportPage from "./pages/FeeReportPage";
-import TransportPage from "./pages/TransportPage";
+import FeeUpdatePage from "./pages/FeeUpdatePage";
+import LoginPage from "./pages/LoginPage";
 import ReportCardPage from "./pages/ReportCardPage";
+import StudentsPage from "./pages/StudentsPage";
+import TransportPage from "./pages/TransportPage";
 
 export type Page =
   | "dashboard"
@@ -50,21 +50,34 @@ export default function App() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case "dashboard": return <DashboardPage />;
-      case "students": return <StudentsPage />;
-      case "attendance": return <AttendancePage />;
-      case "fee-billing": return <FeeBillingPage />;
-      case "fee-update": return <FeeUpdatePage />;
-      case "fee-report": return <FeeReportPage />;
-      case "transport": return <TransportPage />;
-      case "report-card": return <ReportCardPage />;
-      default: return <DashboardPage />;
+      case "dashboard":
+        return <DashboardPage />;
+      case "students":
+        return <StudentsPage />;
+      case "attendance":
+        return <AttendancePage />;
+      case "fee-billing":
+        return <FeeBillingPage />;
+      case "fee-update":
+        return <FeeUpdatePage />;
+      case "fee-report":
+        return <FeeReportPage />;
+      case "transport":
+        return <TransportPage />;
+      case "report-card":
+        return <ReportCardPage />;
+      default:
+        return <DashboardPage />;
     }
   };
 
   return (
     <>
-      <Layout currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout}>
+      <Layout
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+        onLogout={handleLogout}
+      >
         <div className="page-transition">{renderPage()}</div>
       </Layout>
       <Toaster position="bottom-right" richColors />
